@@ -68,7 +68,7 @@ testResult_t AlltoAllRunColl(void* sendbuff, void* recvbuff, size_t count, ncclD
   printf("NCCL 2.7 or later is needed for alltoall. This test was compiled with %d.%d.\n", NCCL_MAJOR, NCCL_MINOR);
   return testNcclError;
 #else
-  NCCLCHECK(ncclAllToAll(sendbuff, recvbuff, count, type, comm, stream));
+  NCCLCHECK(ncclAllToAll(sendbuff, recvbuff, count/nRanks, type, comm, stream));
   // NCCLCHECK(ncclGroupStart());
   // for (int r=0; r<nRanks; r++) {
   //   NCCLCHECK(ncclSend(((char*)sendbuff)+r*rankOffset, count, type, r, comm, stream));
