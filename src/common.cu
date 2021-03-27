@@ -10,6 +10,7 @@
 #include <getopt.h>
 #include <libgen.h>
 #include "cuda.h"
+// #define DEBUG_PRINT
 
 #if NCCL_MAJOR >= 2
 ncclDataType_t test_types[ncclNumTypes] = {ncclInt8, ncclUint8, ncclInt32, ncclUint32, ncclInt64, ncclUint64, ncclHalf, ncclFloat, ncclDouble};
