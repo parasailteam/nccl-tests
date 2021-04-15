@@ -558,9 +558,9 @@ testResult_t threadLaunch(struct testThread* thread) {
 }
 
 testResult_t AllocateBuffs(void **sendbuff, size_t sendBytes, void **recvbuff, size_t recvBytes, void **expected, size_t nbytes, int nranks) {
-    CUDACHECK(cudaMalloc(sendbuff, nbytes));
-    CUDACHECK(cudaMalloc(recvbuff, nbytes));
-    if (datacheck) CUDACHECK(cudaMalloc(expected, recvBytes));
+    CUDACHECK(cudaMalloc(sendbuff, 3*nbytes));
+    CUDACHECK(cudaMalloc(recvbuff, 3*nbytes));
+    if (datacheck) CUDACHECK(cudaMalloc(expected, 3*recvBytes));
     return testSuccess;
 }
 
