@@ -394,6 +394,7 @@ testResult_t completeColl(struct threadArgs* args) {
   if (blocking_coll) return testSuccess;
 
   TESTCHECK(testStreamSynchronize(args->nGpus, args->streams, args->comms));
+  Barrier(args);
   return testSuccess;
 }
 
@@ -560,7 +561,7 @@ testResult_t threadLaunch(struct testThread* thread) {
 testResult_t AllocateBuffs(void **sendbuff, size_t sendBytes, void **recvbuff, size_t recvBytes, void **expected, size_t nbytes, int nranks) {
     CUDACHECK(cudaMalloc(sendbuff, nbytes));
     CUDACHECK(cudaMalloc(recvbuff, 8*nbytes));
-    if (datacheck) CUDACHECK(cudaMalloc(expected, 3*recvBytes));
+    if (datacheck) CUDACHECK(cudaMalloc(expected, recvBytes));
     return testSuccess;
 }
 
