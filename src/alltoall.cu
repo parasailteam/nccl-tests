@@ -69,7 +69,7 @@ testResult_t AlltoAllRunColl(void* sendbuff, void* recvbuff, size_t count, ncclD
   return testNcclError;
 #else
   if (sendbuff != recvbuff)
-    ;//NCCLCHECK(ncclAllToAll(sendbuff, recvbuff, count, type, comm, stream));
+    NCCLCHECK(ncclAllToAll(sendbuff, recvbuff, count, type, comm, stream));
   // NCCLCHECK(ncclGroupStart());
   // for (int r=0; r<nRanks; r++) {
   //   NCCLCHECK(ncclSend(((char*)sendbuff)+r*rankOffset, count, type, r, comm, stream));
