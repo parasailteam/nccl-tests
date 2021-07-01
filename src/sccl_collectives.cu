@@ -19,7 +19,7 @@ void print_line_header (size_t size, size_t count, const char *typeName, const c
   PRINT("%12li  %12li  %6s  %6s", size, count, typeName, opName);
 }
 
-void AllReduceGetCollByteCount(size_t *sendcount, size_t *recvcount, size_t *paramcount, size_t *sendInplaceOffset, size_t *recvInplaceOffset, size_t count, int nranks) {
+void CustomAllReduceGetCollByteCount(size_t *sendcount, size_t *recvcount, size_t *paramcount, size_t *sendInplaceOffset, size_t *recvInplaceOffset, size_t count, int nranks) {
   *sendcount = count;
   *recvcount = count;
   *sendInplaceOffset = 0;
@@ -27,7 +27,7 @@ void AllReduceGetCollByteCount(size_t *sendcount, size_t *recvcount, size_t *par
   *paramcount = *sendcount;
 }
 
-testResult_t AllReduceInitData(struct threadArgs* args, ncclDataType_t type, ncclRedOp_t op, int root, int rep, int in_place) {
+testResult_t CustomAllReduceInitData(struct threadArgs* args, ncclDataType_t type, ncclRedOp_t op, int root, int rep, int in_place) {
   size_t sendcount = args->sendBytes / wordSize(type);
   size_t recvcount = args->expectedBytes / wordSize(type);
   int nranks = args->nProcs*args->nThreads*args->nGpus;
@@ -45,7 +45,7 @@ testResult_t AllReduceInitData(struct threadArgs* args, ncclDataType_t type, ncc
   return testSuccess;
 }
 
-void AllReduceGetBw(size_t count, int typesize, double sec, double* algBw, double* busBw, int nranks) {
+void CustomAllReduceGetBw(size_t count, int typesize, double sec, double* algBw, double* busBw, int nranks) {
   double baseBw = (double)(count * typesize) / 1.0E9 / sec;
 
   *algBw = baseBw;
@@ -53,7 +53,7 @@ void AllReduceGetBw(size_t count, int typesize, double sec, double* algBw, doubl
   *busBw = baseBw * factor;
 }
 
-testResult_t AllReduceRunColl(void* sendbuff, void* recvbuff, size_t count, ncclDataType_t type, ncclRedOp_t op, int root, ncclComm_t comm, ncclCustomColl_t customColl, cudaStream_t stream) {
+testResult_t CustomAllReduceRunColl(void* sendbuff, void* recvbuff, size_t count, ncclDataType_t type, ncclRedOp_t op, int root, ncclComm_t comm, ncclCustomColl_t customColl, cudaStream_t stream) {
   int nranks;
   NCCLCHECK(ncclCommCount(comm, &nranks));
   NCCLCHECK(ncclCustomCollective(customColl, sendbuff, recvbuff, count/nranks, type, comm, stream));
@@ -61,19 +61,19 @@ testResult_t AllReduceRunColl(void* sendbuff, void* recvbuff, size_t count, nccl
 }
 
 struct testColl customCollTest = {
-  "CustomColl",
-  AllReduceGetCollByteCount,
-  AllReduceInitData,
-  AllReduceGetBw,
-  {.runCustomColl = AllReduceRunColl}
+  "CustomAllReduce",
+  CustomAllReduceGetCollByteCount,
+  CustomAllReduceInitData,
+  CustomAllReduceGetBw,
+  {.runCustomColl = CustomAllReduceRunColl}
 };
 
-void AllReduceGetBuffSize(size_t *sendcount, size_t *recvcount, size_t count, int nranks) {
+void CustomAllReduceGetBuffSize(size_t *sendcount, size_t *recvcount, size_t count, int nranks) {
   size_t paramcount, sendInplaceOffset, recvInplaceOffset;
-  AllReduceGetCollByteCount(sendcount, recvcount, &paramcount, &sendInplaceOffset, &recvInplaceOffset, count, nranks);
+  CustomAllReduceGetCollByteCount(sendcount, recvcount, &paramcount, &sendInplaceOffset, &recvInplaceOffset, count, nranks);
 }
 
-testResult_t AllReduceRunTest(struct threadArgs* args, int root, ncclDataType_t type, const char* typeName, ncclRedOp_t op, const char* opName) {
+testResult_t CustomAllReduceRunTest(struct threadArgs* args, int root, ncclDataType_t type, const char* typeName, ncclRedOp_t op, const char* opName) {
   args->collTest = &customCollTest;
   ncclDataType_t *run_types;
   ncclRedOp_t *run_ops;
@@ -108,9 +108,9 @@ testResult_t AllReduceRunTest(struct threadArgs* args, int root, ncclDataType_t 
   return testSuccess;
 }
 
-struct testEngine allReduceEngine = {
-  AllReduceGetBuffSize,
-  AllReduceRunTest
+struct testEngine customAllReduceEngine = {
+  CustomAllReduceGetBuffSize,
+  CustomAllReduceRunTest
 };
 
-#pragma weak ncclTestEngine=allReduceEngine
+#pragma weak ncclTestEngine=customAllReduceEngine

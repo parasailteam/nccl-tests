@@ -377,7 +377,7 @@ testResult_t startColl(struct threadArgs* args, ncclDataType_t type, ncclRedOp_t
     char* recvBuff = ((char*)args->recvbuffs[i]) + shift;
     char* sendBuff = ((char*)args->sendbuffs[i]) + shift;
     //FIXME: Find a better way for this
-    if (strcmp(args->collTest->name, "CustomColl") == 0) {
+    if (strcmp(args->collTest->name, "CustomAllReduce") == 0) {
       TESTCHECK(args->collTest->runCustomColl(
             (void*)(in_place ? recvBuff + args->sendInplaceOffset*rank : sendBuff),
             (void*)(in_place ? recvBuff + args->recvInplaceOffset*rank : recvBuff),
@@ -793,16 +793,20 @@ testResult_t run() {
     if (nProcs == 1) {
       int gpuArray[nGpus*nThreads];
       for (int i=0; i<nGpus*nThreads; i++) gpuArray[i] = i; 
-      NCCLCHECK(ncclCommInitAll(comms, nGpus*nThreads, gpuArray));
-      if (customCollXML != nullptr)
-        for (int i=0; i<nGpus*nThreads; i++) {
-          NCCLCHECK(ncclCustomCollectiveInit(comms[i], &customColls[i], customCollXML));
-        }
+      if (customCollXML != nullptr) {
+        NCCLCHECK(ncclCommInitAllWithScclXML(comms, nGpus*nThreads, gpuArray, customCollXML));
+      } else {
+        NCCLCHECK(ncclCommInitAll(comms, nGpus*nThreads, gpuArray));
+      }
     } else {
       NCCLCHECK(ncclGroupStart());
       for (int i=0; i<nGpus*nThreads; i++) {
         CUDACHECK(cudaSetDevice(localRank*nThreads*nGpus+i));
-        NCCLCHECK(ncclCommInitRank(comms+i, nProcs*nThreads*nGpus, ncclId, proc*nThreads*nGpus+i));
+        if (customCollXML != nullptr) {
+          NCCLCHECK(ncclCommInitRankWithScclXML(comms+i, nProcs*nThreads*nGpus, ncclId, proc*nThreads*nGpus+i, customCollXML));
+        } else {
+          NCCLCHECK(ncclCommInitRank(comms+i, nProcs*nThreads*nGpus, ncclId, proc*nThreads*nGpus+i));
+        }
       }
       NCCLCHECK(ncclGroupEnd());
     }
