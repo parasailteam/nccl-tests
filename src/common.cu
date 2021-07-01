@@ -376,19 +376,10 @@ testResult_t startColl(struct threadArgs* args, ncclDataType_t type, ncclRedOp_t
     int rank = ((args->proc*args->nThreads + args->thread)*args->nGpus + i);
     char* recvBuff = ((char*)args->recvbuffs[i]) + shift;
     char* sendBuff = ((char*)args->sendbuffs[i]) + shift;
-    //FIXME: Find a better way for this
-    if (strcmp(args->collTest->name, "CustomAllReduce") == 0) {
-      TESTCHECK(args->collTest->runCustomColl(
-            (void*)(in_place ? recvBuff + args->sendInplaceOffset*rank : sendBuff),
-            (void*)(in_place ? recvBuff + args->recvInplaceOffset*rank : recvBuff),
-          count, type, op, root, args->comms[i], args->customColls[i], 
-          args->streams[i]));
-    } else {
-      TESTCHECK(args->collTest->runColl(
-            (void*)(in_place ? recvBuff + args->sendInplaceOffset*rank : sendBuff),
-            (void*)(in_place ? recvBuff + args->recvInplaceOffset*rank : recvBuff),
-          count, type, op, root, args->comms[i], args->streams[i]));
-    }
+    TESTCHECK(args->collTest->runColl(
+          (void*)(in_place ? recvBuff + args->sendInplaceOffset*rank : sendBuff),
+          (void*)(in_place ? recvBuff + args->recvInplaceOffset*rank : recvBuff),
+        count, type, op, root, args->comms[i], args->streams[i]));
   }
   if (args->nGpus > 1) NCCLCHECK(ncclGroupEnd());
 
@@ -788,7 +779,7 @@ testResult_t run() {
 
   //if parallel init is not selected, use main thread to initialize NCCL
   ncclComm_t* comms = (ncclComm_t*)malloc(sizeof(ncclComm_t)*nThreads*nGpus);
-  ncclCustomColl_t* customColls = (ncclCustomColl_t*)malloc(sizeof(ncclCustomColl_t)*nThreads*nGpus);
+  
   if (!parallel_init) {
     if (nProcs == 1) {
       int gpuArray[nGpus*nThreads];
@@ -849,7 +840,6 @@ testResult_t run() {
     threads[t].args.ncclId = ncclId;
     threads[t].args.comms=comms+t*nGpus;
     threads[t].args.streams=streams+t*nGpus;
-    threads[t].args.customColls=customColls+t*nGpus;
 
     threads[t].args.barrier = (volatile int*)barrier;
     threads[t].args.barrier_idx = 0;

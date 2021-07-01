@@ -53,10 +53,10 @@ void CustomAllReduceGetBw(size_t count, int typesize, double sec, double* algBw,
   *busBw = baseBw * factor;
 }
 
-testResult_t CustomAllReduceRunColl(void* sendbuff, void* recvbuff, size_t count, ncclDataType_t type, ncclRedOp_t op, int root, ncclComm_t comm, ncclCustomColl_t customColl, cudaStream_t stream) {
+testResult_t CustomAllReduceRunColl(void* sendbuff, void* recvbuff, size_t count, ncclDataType_t type, ncclRedOp_t op, int root, ncclComm_t comm, cudaStream_t stream) {
   int nranks;
   NCCLCHECK(ncclCommCount(comm, &nranks));
-  NCCLCHECK(ncclCustomCollective(customColl, sendbuff, recvbuff, count/nranks, type, comm, stream));
+  NCCLCHECK(ncclCustomCollective(sendbuff, recvbuff, count/nranks, type, comm, stream));
   return testSuccess;
 }
 
@@ -65,7 +65,7 @@ struct testColl customCollTest = {
   CustomAllReduceGetCollByteCount,
   CustomAllReduceInitData,
   CustomAllReduceGetBw,
-  {.runCustomColl = CustomAllReduceRunColl}
+  CustomAllReduceRunColl
 };
 
 void CustomAllReduceGetBuffSize(size_t *sendcount, size_t *recvcount, size_t count, int nranks) {
