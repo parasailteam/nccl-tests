@@ -55,6 +55,7 @@ All tests support the same set of arguments :
   * `-o,--op <sum/prod/min/max/all>` Specify which reduction operation to perform. Only relevant for reduction operations like Allreduce, Reduce or ReduceScatter. Default : Sum.
   * `-d,--datatype <nccltype/all>` Specify which datatype to use. Default : Float.
   * `-r,--root <root/all>` Specify which root to use. Only for operations with a root like broadcast or reduce. Default : 0.
+  * `-x,--xml <sccl xml>` Specify SCCL XML file for custom collective. Default: NULL
 * Performance
   * `-n,--iters <iteration count>` number of iterations. Default : 20.
   * `-w,--warmup_iters <warmup iteration count>` number of warmup iterations (not timed). Default : 5.
