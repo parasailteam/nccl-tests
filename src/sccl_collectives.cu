@@ -4,6 +4,8 @@
  * See LICENSE.txt for license information
  ************************************************************************/
 
+//make VERBOSE=10 NCCL_HOME=`pwd`/../build MPI=1 MPI_HOME=/usr/local/include/openmpi/ -j
+
 #include "cuda_runtime.h"
 #include "common.h"
 
@@ -19,7 +21,7 @@ void print_line_header (size_t size, size_t count, const char *typeName, const c
   PRINT("%12li  %12li  %6s  %6s", size, count, typeName, opName);
 }
 
-void CustomAllReduceGetCollByteCount(size_t *sendcount, size_t *recvcount, size_t *paramcount, size_t *sendInplaceOffset, size_t *recvInplaceOffset, size_t count, int nranks) {
+void CustomCollectiveGetCollByteCount(size_t *sendcount, size_t *recvcount, size_t *paramcount, size_t *sendInplaceOffset, size_t *recvInplaceOffset, size_t count, int nranks) {
   *sendcount = count;
   *recvcount = count;
   *sendInplaceOffset = 0;
@@ -27,7 +29,7 @@ void CustomAllReduceGetCollByteCount(size_t *sendcount, size_t *recvcount, size_
   *paramcount = *sendcount;
 }
 
-testResult_t CustomAllReduceInitData(struct threadArgs* args, ncclDataType_t type, ncclRedOp_t op, int root, int rep, int in_place) {
+testResult_t CustomCollectiveInitData(struct threadArgs* args, ncclDataType_t type, ncclRedOp_t op, int root, int rep, int in_place) {
   size_t sendcount = args->sendBytes / wordSize(type);
   size_t recvcount = args->expectedBytes / wordSize(type);
   int nranks = args->nProcs*args->nThreads*args->nGpus;
@@ -45,7 +47,7 @@ testResult_t CustomAllReduceInitData(struct threadArgs* args, ncclDataType_t typ
   return testSuccess;
 }
 
-void CustomAllReduceGetBw(size_t count, int typesize, double sec, double* algBw, double* busBw, int nranks) {
+void CustomCollectiveGetBw(size_t count, int typesize, double sec, double* algBw, double* busBw, int nranks) {
   double baseBw = (double)(count * typesize) / 1.0E9 / sec;
 
   *algBw = baseBw;
@@ -53,7 +55,7 @@ void CustomAllReduceGetBw(size_t count, int typesize, double sec, double* algBw,
   *busBw = baseBw * factor;
 }
 
-testResult_t CustomAllReduceRunColl(void* sendbuff, void* recvbuff, size_t count, ncclDataType_t type, ncclRedOp_t op, int root, ncclComm_t comm, cudaStream_t stream) {
+testResult_t CustomCollectiveRunColl(void* sendbuff, void* recvbuff, size_t count, ncclDataType_t type, ncclRedOp_t op, int root, ncclComm_t comm, cudaStream_t stream) {
   int nranks;
   NCCLCHECK(ncclCommCount(comm, &nranks));
   NCCLCHECK(ncclCustomCollective(sendbuff, recvbuff, count/nranks, type, comm, stream));
@@ -61,19 +63,19 @@ testResult_t CustomAllReduceRunColl(void* sendbuff, void* recvbuff, size_t count
 }
 
 struct testColl customCollTest = {
-  "CustomAllReduce",
-  CustomAllReduceGetCollByteCount,
-  CustomAllReduceInitData,
-  CustomAllReduceGetBw,
-  CustomAllReduceRunColl
+  "CustomCollective",
+  CustomCollectiveGetCollByteCount,
+  CustomCollectiveInitData,
+  CustomCollectiveGetBw,
+  CustomCollectiveRunColl
 };
 
-void CustomAllReduceGetBuffSize(size_t *sendcount, size_t *recvcount, size_t count, int nranks) {
+void CustomCollectiveGetBuffSize(size_t *sendcount, size_t *recvcount, size_t count, int nranks) {
   size_t paramcount, sendInplaceOffset, recvInplaceOffset;
-  CustomAllReduceGetCollByteCount(sendcount, recvcount, &paramcount, &sendInplaceOffset, &recvInplaceOffset, count, nranks);
+  CustomCollectiveGetCollByteCount(sendcount, recvcount, &paramcount, &sendInplaceOffset, &recvInplaceOffset, count, nranks);
 }
 
-testResult_t CustomAllReduceRunTest(struct threadArgs* args, int root, ncclDataType_t type, const char* typeName, ncclRedOp_t op, const char* opName) {
+testResult_t CustomCollectiveRunTest(struct threadArgs* args, int root, ncclDataType_t type, const char* typeName, ncclRedOp_t op, const char* opName) {
   args->collTest = &customCollTest;
   ncclDataType_t *run_types;
   ncclRedOp_t *run_ops;
@@ -108,9 +110,12 @@ testResult_t CustomAllReduceRunTest(struct threadArgs* args, int root, ncclDataT
   return testSuccess;
 }
 
-struct testEngine customAllReduceEngine = {
-  CustomAllReduceGetBuffSize,
-  CustomAllReduceRunTest
+bool IsCustomCollective() {return true;}
+
+struct testEngine CustomCollectiveEngine = {
+  CustomCollectiveGetBuffSize,
+  CustomCollectiveRunTest,
+  IsCustomCollective
 };
 
-#pragma weak ncclTestEngine=customAllReduceEngine
+#pragma weak ncclTestEngine=CustomCollectiveEngine

@@ -95,9 +95,12 @@ testResult_t AllGatherRunTest(struct threadArgs* args, int root, ncclDataType_t 
   return testSuccess;
 }
 
+bool IsCustomCollective() {return false;}
+
 struct testEngine allGatherEngine = {
   AllGatherGetBuffSize,
-  AllGatherRunTest
+  AllGatherRunTest,
+  IsCustomCollective
 };
 
 #pragma weak ncclTestEngine=allGatherEngine

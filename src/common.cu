@@ -784,8 +784,12 @@ testResult_t run() {
     if (nProcs == 1) {
       int gpuArray[nGpus*nThreads];
       for (int i=0; i<nGpus*nThreads; i++) gpuArray[i] = i; 
-      if (customCollXML != nullptr) {
-        NCCLCHECK(ncclCommInitAllWithScclXML(comms, nGpus*nThreads, gpuArray, customCollXML));
+      if (ncclTestEngine.isCustomCollective()) {
+        if (customCollXML != nullptr) {
+          NCCLCHECK(ncclCommInitAllWithScclXML(comms, nGpus*nThreads, gpuArray, customCollXML));
+        } else {
+          NCCLCHECK(ncclInvalidUsage);
+        }
       } else {
         NCCLCHECK(ncclCommInitAll(comms, nGpus*nThreads, gpuArray));
       }
@@ -793,8 +797,12 @@ testResult_t run() {
       NCCLCHECK(ncclGroupStart());
       for (int i=0; i<nGpus*nThreads; i++) {
         CUDACHECK(cudaSetDevice(localRank*nThreads*nGpus+i));
-        if (customCollXML != nullptr) {
-          NCCLCHECK(ncclCommInitRankWithScclXML(comms+i, nProcs*nThreads*nGpus, ncclId, proc*nThreads*nGpus+i, customCollXML));
+        if (ncclTestEngine.isCustomCollective()) {
+          if (customCollXML != nullptr) {
+            NCCLCHECK(ncclCommInitRankWithScclXML(comms+i, nProcs*nThreads*nGpus, ncclId, proc*nThreads*nGpus+i, customCollXML));
+          } else {
+            NCCLCHECK(ncclInvalidUsage); 
+          }
         } else {
           NCCLCHECK(ncclCommInitRank(comms+i, nProcs*nThreads*nGpus, ncclId, proc*nThreads*nGpus+i));
         }

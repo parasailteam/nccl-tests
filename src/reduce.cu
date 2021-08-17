@@ -115,9 +115,12 @@ testResult_t ReduceRunTest(struct threadArgs* args, int root, ncclDataType_t typ
   return testSuccess;
 }
 
+bool IsCustomCollective() {return false;}
+
 struct testEngine reduceEngine = {
   ReduceGetBuffSize,
-  ReduceRunTest
+  ReduceRunTest,
+  IsCustomCollective
 };
 
 #pragma weak ncclTestEngine=reduceEngine
