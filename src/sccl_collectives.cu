@@ -58,7 +58,7 @@ void CustomCollectiveGetBw(size_t count, int typesize, double sec, double* algBw
 testResult_t CustomCollectiveRunColl(void* sendbuff, void* recvbuff, size_t count, ncclDataType_t type, ncclRedOp_t op, int root, ncclComm_t comm, cudaStream_t stream) {
   int nranks;
   NCCLCHECK(ncclCommCount(comm, &nranks));
-  NCCLCHECK(ncclCustomCollective(sendbuff, recvbuff, count/nranks, type, comm, stream));
+  NCCLCHECK(ncclCustomCollective(sendbuff, recvbuff, count, type, comm, stream));
   return testSuccess;
 }
 
