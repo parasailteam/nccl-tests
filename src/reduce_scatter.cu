@@ -107,9 +107,12 @@ testResult_t ReduceScatterRunTest(struct threadArgs* args, int root, ncclDataTyp
   return testSuccess;
 }
 
+bool IsCustomCollective() {return false;}
+
 struct testEngine reduceScatterEngine = {
   ReduceScatterGetBuffSize,
-  ReduceScatterRunTest
+  ReduceScatterRunTest,
+  IsCustomCollective
 };
 
 #pragma weak ncclTestEngine=reduceScatterEngine

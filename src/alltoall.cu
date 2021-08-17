@@ -115,9 +115,12 @@ testResult_t AlltoAllRunTest(struct threadArgs* args, int root, ncclDataType_t t
   return testSuccess;
 }
 
+bool IsCustomCollective() {return false;}
+
 struct testEngine alltoAllEngine = {
   AlltoAllGetBuffSize,
-  AlltoAllRunTest
+  AlltoAllRunTest,
+  IsCustomCollective
 };
 
 #pragma weak ncclTestEngine=alltoAllEngine

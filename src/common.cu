@@ -40,6 +40,7 @@ static int nccltype = ncclFloat;
 static int ncclroot = 0;
 static int parallel_init = 0;
 static int blocking_coll = 0;
+static char* customCollXML = nullptr;
 
 double parsesize(char *value) {
     long long int units;
@@ -589,12 +590,13 @@ int main(int argc, char* argv[]) {
     {"datatype", required_argument, 0, 'd'},
     {"root", required_argument, 0, 'r'},
     {"blocking", required_argument, 0, 'z'},
+    {"xml", required_argument, 0, 'x'},
     {"help", no_argument, 0, 'h'}
   };
 
   while(1) {
     int c;
-    c = getopt_long(argc, argv, "t:g:b:e:i:f:n:m:w:p:c:o:d:r:z:h", longopts, &longindex);
+    c = getopt_long(argc, argv, "t:g:b:e:i:f:n:m:w:p:c:o:d:r:z:x:h", longopts, &longindex);
 
     if (c == -1)
       break;
@@ -649,6 +651,9 @@ int main(int argc, char* argv[]) {
       case 'z':
         blocking_coll = strtol(optarg, NULL, 0);
         break;
+      case 'x':
+        customCollXML = optarg;
+        break;
       case 'h':
 	printf("USAGE: %s \n\t"
             "[-t,--nthreads <num threads>] \n\t"
@@ -666,6 +671,7 @@ int main(int argc, char* argv[]) {
             "[-d,--datatype <nccltype/all>] \n\t"
             "[-r,--root <root>] \n\t"
             "[-z,--blocking <0/1>] \n\t"
+            "[-x,--xml] \n\t"
             "[-h,--help]\n",
 	    basename(argv[0]));
 	return 0;
@@ -687,6 +693,7 @@ int main(int argc, char* argv[]) {
             "[-d,--datatype <nccltype/all>] \n\t"
             "[-r,--root <root>] \n\t"
             "[-z,--blocking <0/1>] \n\t"
+            "[-x,--xml] \n\t"
             "[-h,--help]\n",
 	    basename(argv[0]));
 	return 0;
@@ -772,19 +779,36 @@ testResult_t run() {
 
   //if parallel init is not selected, use main thread to initialize NCCL
   ncclComm_t* comms = (ncclComm_t*)malloc(sizeof(ncclComm_t)*nThreads*nGpus);
+  
   if (!parallel_init) {
-     if (nProcs == 1) {
-       int gpuArray[nGpus*nThreads];
-       for (int i=0; i<nGpus*nThreads; i++) gpuArray[i] = i;
-       NCCLCHECK(ncclCommInitAll(comms, nGpus*nThreads, gpuArray));
-     } else {
-       NCCLCHECK(ncclGroupStart());
-       for (int i=0; i<nGpus*nThreads; i++) {
-         CUDACHECK(cudaSetDevice(localRank*nThreads*nGpus+i));
-         NCCLCHECK(ncclCommInitRank(comms+i, nProcs*nThreads*nGpus, ncclId, proc*nThreads*nGpus+i));
-       }
-       NCCLCHECK(ncclGroupEnd());
-     }
+    if (nProcs == 1) {
+      int gpuArray[nGpus*nThreads];
+      for (int i=0; i<nGpus*nThreads; i++) gpuArray[i] = i; 
+      if (ncclTestEngine.isCustomCollective()) {
+        if (customCollXML != nullptr) {
+          NCCLCHECK(ncclCommInitAllWithScclXML(comms, nGpus*nThreads, gpuArray, customCollXML));
+        } else {
+          NCCLCHECK(ncclInvalidUsage);
+        }
+      } else {
+        NCCLCHECK(ncclCommInitAll(comms, nGpus*nThreads, gpuArray));
+      }
+    } else {
+      NCCLCHECK(ncclGroupStart());
+      for (int i=0; i<nGpus*nThreads; i++) {
+        CUDACHECK(cudaSetDevice(localRank*nThreads*nGpus+i));
+        if (ncclTestEngine.isCustomCollective()) {
+          if (customCollXML != nullptr) {
+            NCCLCHECK(ncclCommInitRankWithScclXML(comms+i, nProcs*nThreads*nGpus, ncclId, proc*nThreads*nGpus+i, customCollXML));
+          } else {
+            NCCLCHECK(ncclInvalidUsage); 
+          }
+        } else {
+          NCCLCHECK(ncclCommInitRank(comms+i, nProcs*nThreads*nGpus, ncclId, proc*nThreads*nGpus+i));
+        }
+      }
+      NCCLCHECK(ncclGroupEnd());
+    }
   }
 
   int errors[nThreads];

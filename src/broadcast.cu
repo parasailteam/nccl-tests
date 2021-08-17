@@ -112,9 +112,12 @@ testResult_t BroadcastRunTest(struct threadArgs* args, int root, ncclDataType_t 
   return testSuccess;
 }
 
+bool IsCustomCollective() {return false;}
+
 struct testEngine broadcastEngine = {
   BroadcastGetBuffSize,
-  BroadcastRunTest
+  BroadcastRunTest,
+  IsCustomCollective
 };
 
 #pragma weak ncclTestEngine=broadcastEngine
