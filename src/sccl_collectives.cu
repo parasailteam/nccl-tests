@@ -33,7 +33,7 @@ testResult_t CustomCollectiveInitData(struct threadArgs* args, ncclDataType_t ty
   size_t sendcount = args->sendBytes / wordSize(type);
   size_t recvcount = args->expectedBytes / wordSize(type);
   int nranks = args->nProcs*args->nThreads*args->nGpus;
-
+  /**For now this custom collective only supports checking results for AllReduce*/
   for (int i=0; i<args->nGpus; i++) {
     int gpuid = args->localRank*args->nThreads*args->nGpus + args->thread*args->nGpus + i;
     CUDACHECK(cudaSetDevice(gpuid));
