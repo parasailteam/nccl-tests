@@ -110,12 +110,9 @@ testResult_t CustomCollectiveRunTest(struct threadArgs* args, int root, ncclData
   return testSuccess;
 }
 
-bool IsCustomCollective() {return true;}
-
 struct testEngine CustomCollectiveEngine = {
   CustomCollectiveGetBuffSize,
   CustomCollectiveRunTest,
-  IsCustomCollective
 };
 
 #pragma weak ncclTestEngine=CustomCollectiveEngine

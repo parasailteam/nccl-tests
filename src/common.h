@@ -84,7 +84,6 @@ struct testEngine {
   void (*getBuffSize)(size_t *sendcount, size_t *recvcount, size_t count, int nranks);
   testResult_t (*runTest)(struct threadArgs* args, int root, ncclDataType_t type,
       const char* typeName, ncclRedOp_t op, const char* opName);
-  bool (*isCustomCollective) ();
 };
 
 extern struct testEngine ncclTestEngine;

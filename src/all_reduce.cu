@@ -106,12 +106,9 @@ testResult_t AllReduceRunTest(struct threadArgs* args, int root, ncclDataType_t 
   return testSuccess;
 }
 
-bool IsCustomCollective() {return false;}
-
 struct testEngine allReduceEngine = {
   AllReduceGetBuffSize,
   AllReduceRunTest,
-  IsCustomCollective
 };
 
 #pragma weak ncclTestEngine=allReduceEngine
