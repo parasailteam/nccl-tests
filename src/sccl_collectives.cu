@@ -42,9 +42,9 @@ testResult_t CustomCollectiveInitData(struct threadArgs* args, ncclDataType_t ty
     TESTCHECK(InitData(args->recvbuffs[i], sendcount, type, rep, rank));
     TESTCHECK(InitData(args->sendbuffs[i], sendcount, type, rep, rank));
     if (rank == 0)
-      TESTCHECK(InitData(args->expected[i], recvcount, type, rep, 0));
+      TESTCHECK(InitData(args->expected[i], sendcount, type, rep, 0));
     else
-      TESTCHECK(InitData(args->expected[i], recvcount, type, rep, rank-1));
+      TESTCHECK(InitData(args->expected[i], sendcount, type, rep, rank-1));
     CUDACHECK(cudaDeviceSynchronize());
   }
   return testSuccess;
@@ -59,9 +59,16 @@ void CustomCollectiveGetBw(size_t count, int typesize, double sec, double* algBw
 }
 
 testResult_t CustomCollectiveRunColl(void* sendbuff, void* recvbuff, size_t count, ncclDataType_t type, ncclRedOp_t op, int root, ncclComm_t comm, cudaStream_t stream) {
-  int nranks;
+  int rank, nranks;
+  NCCLCHECK(ncclCommUserRank(comm, &rank));
   NCCLCHECK(ncclCommCount(comm, &nranks));
-  NCCLCHECK(ncclCustomCollective(sendbuff, recvbuff, count, type, comm, stream));
+  NCCLCHECK(ncclGroupStart());
+  if (rank < nranks-1)
+    NCCLCHECK(ncclSend(((char*)sendbuff), count, type, rank+1, comm, stream));
+  if (rank > 0)
+    NCCLCHECK(ncclRecv(((char*)recvbuff), count, type, rank-1, comm, stream));
+  NCCLCHECK(ncclGroupEnd());
+ // NCCLCHECK(ncclCustomCollective(sendbuff, recvbuff, count, type, 0, comm, stream));
   return testSuccess;
 }
 
