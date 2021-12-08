@@ -39,12 +39,12 @@ testResult_t CustomCollectiveInitData(struct threadArgs* args, ncclDataType_t ty
     CUDACHECK(cudaSetDevice(gpuid));
     int rank = ((args->proc*args->nThreads + args->thread)*args->nGpus + i);
     CUDACHECK(cudaMemset(args->recvbuffs[i], 0, args->expectedBytes));
-    void* data = in_place ? args->recvbuffs[i] : args->sendbuffs[i];
-    TESTCHECK(InitData(data, sendcount, type, rep, rank));
-    if (rank == 0 || rank == nranks/2)
+    TESTCHECK(InitData(args->recvbuffs[i], sendcount, type, rep, rank));
+    TESTCHECK(InitData(args->sendbuffs[i], sendcount, type, rep, rank));
+    if (rank == 0)
       TESTCHECK(InitData(args->expected[i], recvcount, type, rep, 0));
     else
-      TESTCHECK(InitData(args->expected[i], recvcount, type, rep, rank));
+      TESTCHECK(InitData(args->expected[i], recvcount, type, rep, rank-1));
     CUDACHECK(cudaDeviceSynchronize());
   }
   return testSuccess;
