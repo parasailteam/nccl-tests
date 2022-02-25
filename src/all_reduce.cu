@@ -27,7 +27,13 @@ void AllReduceGetCollByteCount(size_t *sendcount, size_t *recvcount, size_t *par
   *paramcount = *sendcount;
 }
 
+
+cudaStream_t ar_stream = NULL;
+
 testResult_t AllReduceInitData(struct threadArgs* args, ncclDataType_t type, ncclRedOp_t op, int root, int rep, int in_place) {
+  if (ar_stream == NULL)
+    CUDACHECK(cudaStreamCreateWithFlags(&ar_stream, cudaStreamNonBlocking));
+
   size_t sendcount = args->sendBytes / wordSize(type);
   size_t recvcount = args->expectedBytes / wordSize(type);
   int nranks = args->nProcs*args->nThreads*args->nGpus;
@@ -54,7 +60,14 @@ void AllReduceGetBw(size_t count, int typesize, double sec, double* algBw, doubl
 }
 
 testResult_t AllReduceRunColl(void* sendbuff, void* recvbuff, size_t count, ncclDataType_t type, ncclRedOp_t op, int root, ncclComm_t comm, cudaStream_t stream) {
-  NCCLCHECK(ncclAllReduce(sendbuff, recvbuff, count, type, op, comm, stream));
+  if (sendbuff == recvbuff)
+    NCCLCHECK(ncclAllReduce(sendbuff, recvbuff, count, type, op, comm, ar_stream));
+  else
+    NCCLCHECK(ncclAllReduce(sendbuff, recvbuff, count, type, op, comm, stream));
+  if (sendbuff == recvbuff){
+    for (int i = 0; i < 1000; i++)
+      NCCLCHECK(ncclSynchronize(i, comm, stream));
+  }
   return testSuccess;
 }
 
