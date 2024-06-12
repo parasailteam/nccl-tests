@@ -594,7 +594,7 @@ int main(int argc, char* argv[]) {
 
   while(1) {
     int c;
-    c = getopt_long(argc, argv, "t:g:b:e:i:f:n:m:w:p:c:o:d:r:z:h", longopts, &longindex);
+    c = getopt_long(argc, argv, "t:g:b:e:i:f:n:m:w:p:c:o:d:r:z:x:h", longopts, &longindex);
 
     if (c == -1)
       break;
@@ -772,19 +772,20 @@ testResult_t run() {
 
   //if parallel init is not selected, use main thread to initialize NCCL
   ncclComm_t* comms = (ncclComm_t*)malloc(sizeof(ncclComm_t)*nThreads*nGpus);
+  
   if (!parallel_init) {
-     if (nProcs == 1) {
-       int gpuArray[nGpus*nThreads];
-       for (int i=0; i<nGpus*nThreads; i++) gpuArray[i] = i;
-       NCCLCHECK(ncclCommInitAll(comms, nGpus*nThreads, gpuArray));
-     } else {
-       NCCLCHECK(ncclGroupStart());
-       for (int i=0; i<nGpus*nThreads; i++) {
-         CUDACHECK(cudaSetDevice(localRank*nThreads*nGpus+i));
-         NCCLCHECK(ncclCommInitRank(comms+i, nProcs*nThreads*nGpus, ncclId, proc*nThreads*nGpus+i));
-       }
-       NCCLCHECK(ncclGroupEnd());
-     }
+    if (nProcs == 1) {
+      int gpuArray[nGpus*nThreads];
+      for (int i=0; i<nGpus*nThreads; i++) gpuArray[i] = i; 
+      NCCLCHECK(ncclCommInitAll(comms, nGpus*nThreads, gpuArray));
+    } else {
+      NCCLCHECK(ncclGroupStart());
+      for (int i=0; i<nGpus*nThreads; i++) {
+        CUDACHECK(cudaSetDevice(localRank*nThreads*nGpus+i));
+        NCCLCHECK(ncclCommInitRank(comms+i, nProcs*nThreads*nGpus, ncclId, proc*nThreads*nGpus+i));
+      }
+      NCCLCHECK(ncclGroupEnd());
+    }
   }
 
   int errors[nThreads];

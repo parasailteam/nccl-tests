@@ -71,13 +71,14 @@ struct testColl {
       ncclRedOp_t op, int root, int rep, int in_place);
   void (*getBw)(size_t count, int typesize, double sec, double* algBw, double* busBw, int nranks);
   testResult_t (*runColl)(void* sendbuff, void* recvbuff, size_t count, ncclDataType_t type,
-      ncclRedOp_t op, int root, ncclComm_t comm, cudaStream_t stream);
+    ncclRedOp_t op, int root, ncclComm_t comm, cudaStream_t stream);
 };
 extern struct testColl allReduceTest;
 extern struct testColl allGatherTest;
 extern struct testColl reduceScatterTest;
 extern struct testColl broadcastTest;
 extern struct testColl reduceTest;
+extern struct testColl customCollTest;
 
 struct testEngine {
   void (*getBuffSize)(size_t *sendcount, size_t *recvcount, size_t count, int nranks);
@@ -108,7 +109,7 @@ struct threadArgs {
   ncclUniqueId ncclId;
   ncclComm_t* comms;
   cudaStream_t* streams;
-
+  
   void** expected;
   size_t expectedBytes;
   volatile int* sync;

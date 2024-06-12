@@ -117,7 +117,7 @@ testResult_t AlltoAllRunTest(struct threadArgs* args, int root, ncclDataType_t t
 
 struct testEngine alltoAllEngine = {
   AlltoAllGetBuffSize,
-  AlltoAllRunTest
+  AlltoAllRunTest,
 };
 
 #pragma weak ncclTestEngine=alltoAllEngine
